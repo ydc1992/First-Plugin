@@ -21,8 +21,8 @@ static const GUID guid_PluginGuid =
 
 #define SAFEFREE(p)  if(!(p)){free((p));(p) = NULL;}
 #define RETURNULL(p) if(!(p))return NULL;
-#define RTTYPE(p,q)  if(p)return q;
-#define SAFECLOSEHANDLE(p,q) if(!p){CloseHandle(p);return q;}
+#define RTTYPE(p,q)  if(p)return (q);
+#define SAFECLOSEHANDLE(p,q) if(!p){CloseHandle(p);return (q);}
 
 //全局变量
 AnalyseInfo * gpAnalyInfo = NULL;
@@ -47,7 +47,6 @@ void WINAPI GetGlobalInfoW(GlobalInfo *Info)
 		FARMANAGERVERSION_BUILD,
 		FARMANAGERVERSION_STAGE);
 
-	Info->Version = Info->MinFarVersion;
 	Info->StructSize = sizeof(GlobalInfo);
 	Info->Author = L"Ken";
 	Info->Description = L"My First Plugin";
@@ -152,8 +151,13 @@ HANDLE WINAPI OpenW(const struct OpenInfo *Info)
 	{
 		pszname = GetCurrentSelectItemFullPath();
 	}
-	MessageBox(NULL, pszname, L"Test", 0);
-	DUMPFILE(pszname);
+//	MessageBox(NULL, pszname, L"Test", 0);
+	fsf.AddEndSlash(pszname);
+	_int64 clock = fsf.FarClock();
+
+
+
+
 	return NULL;
 }
 
