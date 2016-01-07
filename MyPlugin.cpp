@@ -19,6 +19,9 @@ static const GUID guid_PluginMenu =
 static const GUID guid_PluginGuid =
 { 0x1c6b0907, 0xb96, 0x47c4,{ 0xa2, 0x4b, 0x36, 0xa9, 0xb1, 0x84, 0xaf, 0x25 } };
 
+
+
+
 #define SAFEFREE(p)  if(!(p)){free((p));(p) = NULL;}
 #define RETURNULL(p) if(!(p))return NULL;
 #define RTTYPE(p,q)  if(p)return (q);
@@ -30,12 +33,16 @@ AnalyseInfo * gpAnalyInfo = NULL;
 PluginStartupInfo psi;
 FarStandardFunctions fsf;
 
+
+//函数声明
+void WINAPI GetOpenPluginInfo(OpenPanelInfo *Info);
+
 //************************************
 // Method:    GetGlobalInfoW
 // FullName:  GetGlobalInfoW
 // Access:    public
 // Returns:   void WINAPI
-// Qualifier:  Far最先加载这个函数，插件菜单中F3显示的内容，导出函数
+// Qualifier:  Far最先加载这个函数，插件菜单中F3显示的内容，导出函数,Far第一个调用的函数
 // Parameter: struct GlobalInfo * Info
 //************************************
 void WINAPI GetGlobalInfoW(GlobalInfo *Info)
@@ -52,6 +59,22 @@ void WINAPI GetGlobalInfoW(GlobalInfo *Info)
 	Info->Description = L"My First Plugin";
 	Info->Title = L"My First Plugin";
 	Info->Guid = guid_PluginGuid;
+}
+
+//************************************
+// Method:    SetStartupInfoW
+// FullName:  SetStartupInfoW
+// Access:    public
+// Returns:   void WINAPI
+// Qualifier: 设置插件启动信息，很重要。导出函数，Far第二个调用的函数
+// Parameter: const PluginStartupInfo * Info
+//************************************
+void WINAPI SetStartupInfoW(const PluginStartupInfo *Info)
+{
+	//传递给全局变量，以便在后面调用。
+	psi = *Info;
+	fsf = *Info->FSF;
+	psi.FSF = &fsf;
 }
 
 //************************************
@@ -75,22 +98,6 @@ void WINAPI  GetPluginInfoW(PluginInfo *Info)
 	Info->PluginMenu.Count = 1;
 	Info->PluginMenu.Guids = &guid_PluginMenu;
 	Info->PluginMenu.Strings = &szMenu;
-}
-
-//************************************
-// Method:    SetStartupInfoW
-// FullName:  SetStartupInfoW
-// Access:    public
-// Returns:   void WINAPI
-// Qualifier: 设置插件启动信息，很重要。导出函数
-// Parameter: const PluginStartupInfo * Info
-//************************************
-void WINAPI SetStartupInfoW(const PluginStartupInfo *Info)
-{
-	//传递给全局变量，以便在后面调用。
-	psi = *Info;
-	fsf = *Info->FSF;
-	psi.FSF = &fsf;
 }
 
 //************************************
@@ -151,49 +158,13 @@ HANDLE WINAPI OpenW(const struct OpenInfo *Info)
 	{
 		pszname = GetCurrentSelectItemFullPath();
 	}
-//	MessageBox(NULL, pszname, L"Test", 0);
-	fsf.AddEndSlash(pszname);
-	_int64 clock = fsf.FarClock();
-
-
-
 
 	return NULL;
 }
 
-//************************************
-// Method:    DUMPFILE
-// FullName:  DUMPFILE
-// Access:    public
-// Returns:   bool
-// Qualifier: 解析文件数据
-// Parameter: LPTSTR lpFileName
-//************************************
-bool DUMPFILE(LPTSTR lpFileName)
+void WINAPI GetOpenPluginInfo(OpenPanelInfo *Info) 
 {
-	//获得文件句柄
-	HANDLE hFile = CreateFile(lpFileName, GENERIC_READ, FILE_SHARE_READ, NULL,
-		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		CloseHandle(hFile);
-		return false;
-	}
-	ULARGE_INTEGER filesize;
-	// 获取文件大小
-	filesize.LowPart = GetFileSize(hFile, &filesize.HighPart);
-	//创建文件映射
-	HANDLE hFileMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-	SAFECLOSEHANDLE(hFileMapping, FALSE);
-	PBYTE* pbMappedFileBase = (PBYTE*)MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
-
-	if (pbMappedFileBase == 0)
-	{
-		CloseHandle(hFileMapping);
-		CloseHandle(hFile);
-		return FALSE;
-	}
-	return TRUE;
+	Info->CurDir = L"";
+	Info->DescrFiles = NULL;
 
 }
-
